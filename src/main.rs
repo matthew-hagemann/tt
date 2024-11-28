@@ -7,6 +7,7 @@
 include!("bindings/bindings.rs");
 
 use std::ptr;
+mod x;
 
 fn main() {
     unsafe {
