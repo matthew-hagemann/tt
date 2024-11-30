@@ -1,8 +1,30 @@
-use std::os::raw::{c_int, c_short};
-
-use crate::{FcPattern, XftFont};
+use std::{ffi::c_void, os::raw::{c_int, c_short}};
 
 include!("bindings/bindings.rs");
+
+#[derive(Debug, Clone)]
+pub enum Arg {
+    Int(i32),
+    UInt(u32),
+    Float(f32),
+    Ptr(*const c_void),
+    Str(&'static str),
+}
+
+/// Represents a keyboard shortcut.
+pub struct Shortcut<'a> {
+    /// Modifiers held to execute the shortcut.
+    pub modifiers: usize,
+
+    /// Key pressed to invoke the shortcut.
+    pub key_symbol: KeySym,
+
+    /// Function to be executed.
+    pub func: Option<&'a dyn Fn(&Arg)>,
+
+    /// Arguments passed through to the function.
+    pub arg: Arg,  
+}
 
 pub struct TermWindow {
     pub tty_width: c_int,
@@ -79,4 +101,18 @@ pub struct DrawingContext {
     pub italic_font: Font,
     pub Italic_bold_font: Font,
     pub graphics_context: GC,
+}
+
+// Event handlers
+pub unsafe fn key_press(e: *mut XEvent) {
+    // Need to understand if e can ever be a null pointer, which is what makes this unsafe.
+    let event:  &mut XKeyEvent = &mut (*e).xkey;
+    let key_symbol = NoSymbol;
+    let mut buf: [u8; 64] = [0; 64];
+    let customkey: &mut [u8] = &mut buf;
+    let mut length: i32 = 0;
+    let mut c: char;
+    let status: i32 = 0;
+    let mut shortcut: *mut Shortcut = std::ptr::null_mut();
+
 }
