@@ -1,4 +1,6 @@
-use std::os::raw::c_int;
+use std::os::raw::{c_int, c_short};
+
+use crate::{FcPattern, XftFont};
 
 include!("bindings/bindings.rs");
 
@@ -44,4 +46,37 @@ pub struct InputMethodEditor {
     pub x_input_context: XIC,
     pub spot: XPoint,
     pub spotlist: XVaNestedList,
+}
+
+pub struct XSelection {
+    pub x_target: Atom,
+    pub primary: char,
+    pub clipboard: char,
+    pub time_click_1: timespec,
+    pub time_click_2: timespec,
+}
+
+pub struct Font {
+    pub height: c_int,
+    pub width: c_int,
+    pub ascent: c_int,
+    pub descent: c_int,
+    pub bad_slant: c_int,
+    pub bad_weight: c_int,
+    pub left_bearing: c_short,
+    pub right_bearing: c_short,
+    // check if these could be *const depending on use
+    pub matched_font: *mut XftFont, 
+    pub font_set: *mut FcFontSet, // set of fonts that match pattern
+    pub font_pattern: *mut FcPattern, // pattern used to match fonts
+}
+
+pub struct DrawingContext {
+    pub Color: *mut XftColor,
+    pub col_length: usize,
+    pub font: Font,
+    pub bold_font: Font,
+    pub italic_font: Font,
+    pub Italic_bold_font: Font,
+    pub graphics_context: GC,
 }
