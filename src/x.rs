@@ -26,6 +26,28 @@ pub struct Shortcut<'a> {
     pub arg: Arg,  
 }
 
+#[derive(PartialEq)]
+pub enum WindowMode {
+	VISIBLE,
+	FOCUSED,
+	APPKEYPAD,
+	MOUSEBTN,
+	MOUSEMOTION,
+	REVERSE,
+	KBDLOCK,
+	HIDE,
+	APPCURSOR,
+	MOUSESGR,
+	EIGHTBIT,
+	BLINK,
+	FBLINK,
+	FOCUS,
+	MOUSEX10,
+	MOUSEMANY,
+	BRCKTPASTE,
+	NUMLOCK,
+}
+
 pub struct TermWindow {
     pub tty_width: c_int,
     pub tty_height: c_int,
@@ -35,7 +57,7 @@ pub struct TermWindow {
     pub char_width: c_int,
 
     // FIXME: Probably should be enums:
-    pub window_state: c_int,
+    pub window_mode: WindowMode,
     pub cursor_style: c_int,
 }
 
@@ -103,8 +125,10 @@ pub struct DrawingContext {
     pub graphics_context: GC,
 }
 
-// Event handlers
-pub unsafe fn key_press(e: *mut XEvent) {
+// TODO: Event handlers
+
+// FIXME: Move TermWindow to a struct along with other static globals
+pub unsafe fn key_press(e: *mut XEvent, win: &TermWindow) {
     // Need to understand if e can ever be a null pointer, which is what makes this unsafe.
     let event:  &mut XKeyEvent = &mut (*e).xkey;
     let key_symbol = NoSymbol;
@@ -114,5 +138,8 @@ pub unsafe fn key_press(e: *mut XEvent) {
     let mut c: char;
     let status: i32 = 0;
     let mut shortcut: *mut Shortcut = std::ptr::null_mut();
-
+    
+    if win.window_mode == WindowMode::KBDLOCK {
+        return
+    }
 }
