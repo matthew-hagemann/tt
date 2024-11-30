@@ -1,4 +1,7 @@
-use std::{ffi::c_void, os::raw::{c_int, c_short}};
+use std::{
+    ffi::c_void,
+    os::raw::{c_int, c_short},
+};
 
 include!("bindings/bindings.rs");
 
@@ -23,29 +26,29 @@ pub struct Shortcut<'a> {
     pub func: Option<&'a dyn Fn(&Arg)>,
 
     /// Arguments passed through to the function.
-    pub arg: Arg,  
+    pub arg: Arg,
 }
 
 #[derive(PartialEq)]
 pub enum WindowMode {
-	VISIBLE,
-	FOCUSED,
-	APPKEYPAD,
-	MOUSEBTN,
-	MOUSEMOTION,
-	REVERSE,
-	KBDLOCK,
-	HIDE,
-	APPCURSOR,
-	MOUSESGR,
-	EIGHTBIT,
-	BLINK,
-	FBLINK,
-	FOCUS,
-	MOUSEX10,
-	MOUSEMANY,
-	BRCKTPASTE,
-	NUMLOCK,
+    VISIBLE,
+    FOCUSED,
+    APPKEYPAD,
+    MOUSEBTN,
+    MOUSEMOTION,
+    REVERSE,
+    KBDLOCK,
+    HIDE,
+    APPCURSOR,
+    MOUSESGR,
+    EIGHTBIT,
+    BLINK,
+    FBLINK,
+    FOCUS,
+    MOUSEX10,
+    MOUSEMANY,
+    BRCKTPASTE,
+    NUMLOCK,
 }
 
 pub struct TermWindow {
@@ -110,8 +113,8 @@ pub struct Font {
     pub left_bearing: c_short,
     pub right_bearing: c_short,
     // check if these could be *const depending on use
-    pub matched_font: *mut XftFont, 
-    pub font_set: *mut FcFontSet, // set of fonts that match pattern
+    pub matched_font: *mut XftFont,
+    pub font_set: *mut FcFontSet,     // set of fonts that match pattern
     pub font_pattern: *mut FcPattern, // pattern used to match fonts
 }
 
@@ -127,19 +130,28 @@ pub struct DrawingContext {
 
 // TODO: Event handlers
 
-// FIXME: Move TermWindow to a struct along with other static globals
-pub unsafe fn key_press(e: *mut XEvent, win: &TermWindow) {
-    // Need to understand if e can ever be a null pointer, which is what makes this unsafe.
-    let event:  &mut XKeyEvent = &mut (*e).xkey;
-    let key_symbol = NoSymbol;
-    let mut buf: [u8; 64] = [0; 64];
-    let customkey: &mut [u8] = &mut buf;
-    let mut length: i32 = 0;
-    let mut c: char;
-    let status: i32 = 0;
-    let mut shortcut: *mut Shortcut = std::ptr::null_mut();
-    
-    if win.window_mode == WindowMode::KBDLOCK {
-        return
+pub struct x {
+    pub drawing_context: DrawingContext,
+    pub x_window: XWindow,
+    pub x_selection: XSelection,
+    pub term_window: TermWindow,
+}
+
+impl x {
+    // FIXME: Move TermWindow to a struct along with other static globals
+    unsafe fn key_press(self, e: *mut XEvent) {
+        // Need to understand if e can ever be a null pointer, which is what makes this unsafe.
+        let event: &mut XKeyEvent = &mut (*e).xkey;
+        let key_symbol = NoSymbol;
+        let mut buf: [u8; 64] = [0; 64];
+        let customkey: &mut [u8] = &mut buf;
+        let mut length: i32 = 0;
+        let mut c: char;
+        let status: i32 = 0;
+        let mut shortcut: *mut Shortcut = std::ptr::null_mut();
+
+        if self.term_window.window_mode == WindowMode::KBDLOCK {
+            return;
+        }
     }
 }
