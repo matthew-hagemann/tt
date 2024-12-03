@@ -3,6 +3,8 @@ use std::{
     os::raw::{c_int, c_short},
 };
 
+use crate::{XBufferOverflow, XmbLookupString};
+
 include!("bindings/bindings.rs");
 
 #[derive(Debug, Clone)]
@@ -139,19 +141,27 @@ pub struct x {
 
 impl x {
     // FIXME: Move TermWindow to a struct along with other static globals
-    unsafe fn key_press(self, e: *mut XEvent) {
-        // Need to understand if e can ever be a null pointer, which is what makes this unsafe.
-        let event: &mut XKeyEvent = &mut (*e).xkey;
-        let key_symbol = NoSymbol;
-        let mut buf: [u8; 64] = [0; 64];
-        let customkey: &mut [u8] = &mut buf;
-        let mut length: i32 = 0;
+    fn key_press(self, e: *mut XEvent) {
+        let event: &mut XKeyEvent = &mut (unsafe { *e }).xkey;
+
+        let mut key_symbol: *mut u64 = NoSymbol.into();
+        let mut buf: [i8; 64] = [0; 64];
+
+        //let customkey: &mut [u8] = &mut buf;
+        let mut length: *mut u64 = std::ptr::null_mut();
         let mut c: char;
-        let status: i32 = 0;
+        let mut status: *mut i32 = std::ptr::null_mut();
         let mut shortcut: *mut Shortcut = std::ptr::null_mut();
 
         if self.term_window.window_mode == WindowMode::KBDLOCK {
             return;
         }
+
+        if !self.x_window.input_method_editor.x_input_context.is_null() {    
+            let len: () = unsafe { XmbLookupString(self.x_window.input_method_editor.x_input_context, event, buf.as_mut_ptr(), buf.len().try_into().unwrap(), key_symbol, status); };
+        }
+        // if status == XBufferOverflow {
+        // return;
+        // }
     }
 }
