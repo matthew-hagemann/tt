@@ -1,9 +1,11 @@
+#![warn(clippy::undocumented_unsafe_blocks)]
+
 use std::{
     ffi::c_void,
     os::raw::{c_int, c_short},
 };
 
-use crate::{XBufferOverflow, XmbLookupString};
+use crate::{KeySym, NoSymbol, XBufferOverflow, XLookupString, XmbLookupString};
 
 include!("bindings/bindings.rs");
 
@@ -142,9 +144,13 @@ pub struct x {
 impl x {
     // FIXME: Move TermWindow to a struct along with other static globals
     fn key_press(self, e: *mut XEvent) {
-        let event: &mut XKeyEvent = &mut (unsafe { *e }).xkey;
+        // Do we always pass a non-null pointer?
+        // add an assert or debug assert that the pointer is not null.
 
-        let mut key_symbol: *mut u64 = NoSymbol.into();
+        let event: &mut XKeyEvent = unsafe { &mut (*e).xkey };
+
+        let mut key_symbol: KeySym = 0;
+        let key_symbol_ptr: *mut KeySym = &mut key_symbol;
         let mut buf: [i8; 64] = [0; 64];
 
         //let customkey: &mut [u8] = &mut buf;
@@ -157,11 +163,31 @@ impl x {
             return;
         }
 
-        if !self.x_window.input_method_editor.x_input_context.is_null() {    
-            let len: () = unsafe { XmbLookupString(self.x_window.input_method_editor.x_input_context, event, buf.as_mut_ptr(), buf.len().try_into().unwrap(), key_symbol, status); };
+        if !self.x_window.input_method_editor.x_input_context.is_null() {
+            let len = unsafe {
+                XmbLookupString(
+                    self.x_window.input_method_editor.x_input_context,
+                    event,
+                    buf.as_mut_ptr(),
+                    buf.len().try_into().unwrap(),
+                    key_symbol_ptr,
+                    status,
+                )
+            };
+            // SAFE: Well, I don't really know, but I hope statue is never null
+            if unsafe { *status } == XBufferOverflow {
+                return;
+            }
+        } else {
+            let len = unsafe {
+                XLookupString(
+                    event,
+                    buf.as_mut_ptr(),
+                    buf.len().try_into().unwrap(),
+                    key_symbol_ptr,
+                    std::ptr::null_mut(),
+                )
+            };
         }
-        // if status == XBufferOverflow {
-        // return;
-        // }
     }
 }
