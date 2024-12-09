@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 bindgen = "0.70.1"
+thiserror = "2.0.6"
 
 [build-dependencies]
 bindgen = "0.70.1"

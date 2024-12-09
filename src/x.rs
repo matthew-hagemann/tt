@@ -4,10 +4,20 @@
 #![allow(non_snake_case)]
 include!("bindings/bindings.rs");
 
+use thiserror::Error;
+
 use std::{
     ffi::c_void,
     os::raw::{c_int, c_short},
 };
+
+#[derive(Error, Debug)]
+pub enum XError {
+    #[error("Buffer overflow occurred")]
+    Unknown,
+    #[error("An unknown error occurred")]
+    BufferOverflow,
+}
 
 #[derive(Debug, Clone)]
 pub enum Arg {
@@ -144,9 +154,8 @@ pub struct x {
 impl x {
     // FIXME: Move TermWindow to a struct along with other static globals
     fn key_press(self, e: *mut XEvent) {
-        // Do we always pass a non-null pointer?
-        // add an assert or debug assert that the pointer is not null.
-
+        debug_assert!(!e.is_null(), "Pointer `e` should not be null");
+        // Event should not ever be a null pointer, fail if it is.
         let event: &mut XKeyEvent = unsafe { &mut (*e).xkey.as_mut() };
 
         let mut key_symbol: KeySym = 0;
@@ -162,32 +171,41 @@ impl x {
         if self.term_window.window_mode == WindowMode::KBDLOCK {
             return;
         }
-
-        if !self.x_window.input_method_editor.x_input_context.is_null() {
-            let len = unsafe {
-                XmbLookupString(
-                    self.x_window.input_method_editor.x_input_context,
-                    event,
-                    buf.as_mut_ptr(),
-                    buf.len().try_into().unwrap(),
-                    key_symbol_ptr,
-                    status,
-                )
-            };
-            // SAFE: Well, I don't really know, but I hope statue is never null
-            if unsafe { *status } == XBufferOverflow {
-                return;
+        
+        // This anonymous function is probably a bad idea and not readable, but was fun to do so I'll refactor it later.
+        let mut len = ||
+         -> Result<i32, XError> {
+            if !self.x_window.input_method_editor.x_input_context.is_null() {
+                let mut status: i32 = 0;
+                let len = unsafe {
+                    XmbLookupString(
+                        self.x_window.input_method_editor.x_input_context,
+                        event,
+                        buf.as_mut_ptr(),
+                        buf.len().try_into().unwrap(),
+                        key_symbol_ptr,
+                        &mut status,
+                    )
+                };
+                if status == XBufferOverflow {
+                    return Err(XError::BufferOverflow);
+                }
+                Ok(len)
+            } else {
+                Ok(unsafe {
+                    XLookupString(
+                        event,
+                        buf.as_mut_ptr(),
+                        buf.len().try_into().unwrap(),
+                        key_symbol_ptr,
+                        std::ptr::null_mut(),
+                    )
+                })
             }
-        } else {
-            let len = unsafe {
-                XLookupString(
-                    event,
-                    buf.as_mut_ptr(),
-                    buf.len().try_into().unwrap(),
-                    key_symbol_ptr,
-                    std::ptr::null_mut(),
-                )
-            };
+        };
+
+        if len().is_err() {
+            print!("oh bother")
         }
     }
 }
