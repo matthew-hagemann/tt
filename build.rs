@@ -14,6 +14,10 @@ fn main() {
         .header("wrapper.h")
         .clang_arg("-I/usr/include/freetype2")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .derive_copy(false)
+        .generate_block(false)
+        .layout_tests(false)
+        .derive_debug(false)
         .generate()
         .expect("Unable to generate bindings");
 

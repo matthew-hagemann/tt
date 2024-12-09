@@ -1,13 +1,13 @@
-#![warn(clippy::undocumented_unsafe_blocks)]
+#![allow(improper_ctypes)]
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+include!("bindings/bindings.rs");
 
 use std::{
     ffi::c_void,
     os::raw::{c_int, c_short},
 };
-
-use crate::{KeySym, NoSymbol, XBufferOverflow, XLookupString, XmbLookupString};
-
-include!("bindings/bindings.rs");
 
 #[derive(Debug, Clone)]
 pub enum Arg {
@@ -107,7 +107,7 @@ pub struct XSelection {
     pub time_click_2: timespec,
 }
 
-pub struct Font {
+pub struct XFont {
     pub height: c_int,
     pub width: c_int,
     pub ascent: c_int,
@@ -147,7 +147,7 @@ impl x {
         // Do we always pass a non-null pointer?
         // add an assert or debug assert that the pointer is not null.
 
-        let event: &mut XKeyEvent = unsafe { &mut (*e).xkey };
+        let event: &mut XKeyEvent = unsafe { &mut (*e).xkey.as_mut() };
 
         let mut key_symbol: KeySym = 0;
         let key_symbol_ptr: *mut KeySym = &mut key_symbol;
