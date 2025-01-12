@@ -7,8 +7,7 @@ include!("bindings/bindings.rs");
 use thiserror::Error;
 
 use std::{
-    ffi::c_void,
-    os::raw::{c_int, c_short},
+    char, ffi::c_void, os::raw::{c_int, c_short}
 };
 
 #[derive(Error, Debug)]
@@ -153,6 +152,7 @@ pub struct x {
 
 impl x {
     // FIXME: Move TermWindow to a struct along with other static globals
+    #[allow(dead_code)]
     fn key_press(self, e: *mut XEvent) {
         debug_assert!(!e.is_null(), "Pointer `e` should not be null");
         // Event should not ever be a null pointer, fail if it is.
@@ -164,17 +164,17 @@ impl x {
 
         //let customkey: &mut [u8] = &mut buf;
         let mut length: *mut u64 = std::ptr::null_mut();
-        let mut c: char;
+        let mut c: i8;
         let mut status: *mut i32 = std::ptr::null_mut();
         let mut shortcut: *mut Shortcut = std::ptr::null_mut();
-
+        
+        // If the keyboard is locked, exit.
         if self.term_window.window_mode == WindowMode::KBDLOCK {
             return;
         }
-        
+
         // This anonymous function is probably a bad idea and not readable, but was fun to do so I'll refactor it later.
-        let mut len = ||
-         -> Result<i32, XError> {
+        let mut get_len = || -> Result<i32, XError> {
             if !self.x_window.input_method_editor.x_input_context.is_null() {
                 let mut status: i32 = 0;
                 let len = unsafe {
@@ -204,8 +204,32 @@ impl x {
             }
         };
 
-        if len().is_err() {
-            print!("oh bother")
+        // TODO: Figure out and handle error cases
+        let mut len = get_len().unwrap();
+
+        // TODO: Shortcuts
+        // TODO: Custom Keys from config file
+
+        // Invalid input
+        if len == 0 {
+            return;
+        }
+
+        // Alt key combination.
+        //
+        // Different terminals supprot different character encoding. We need to handle both 8-bit
+        // extended ascii as well as an ESC-prefixed sequecne.
+        if len == 1 && (event.state & Mod1Mask) != 0 { // A key was pressed with the meta / alt key
+            if self.term_window.window_mode == WindowMode::EIGHTBIT {
+                if buf[0] < 0o177 { // 127 in decimal, ie: 7 bit ascii that needs to be converted to 8 bit. This represents meta key usage.
+                let high_bit = 0x80;
+                c = buf[0] | high_bit; // Set the high bit
+                // Encode 'c' as UFT-8 and store in buffer
+                let char_value = char::from_u32(c as u8 as u32).expect("Invalid character encoding in kpress fn");
+                let utf8_len = char_value.encode_utf8(&mut buf.map(|b| b as u8)).len();
+                len = utf8_len as i32;
+                }
+            }
         }
     }
 }
