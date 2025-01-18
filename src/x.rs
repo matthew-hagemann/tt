@@ -7,7 +7,9 @@ include!("bindings/bindings.rs");
 use thiserror::Error;
 
 use std::{
-    char, ffi::c_void, os::raw::{c_int, c_short}
+    char,
+    ffi::c_void,
+    os::raw::{c_int, c_short},
 };
 
 #[derive(Error, Debug)]
@@ -167,7 +169,7 @@ impl x {
         let mut c: i8;
         let mut status: *mut i32 = std::ptr::null_mut();
         let mut shortcut: *mut Shortcut = std::ptr::null_mut();
-        
+
         // If the keyboard is locked, exit.
         if self.term_window.window_mode == WindowMode::KBDLOCK {
             return;
@@ -219,17 +221,26 @@ impl x {
         //
         // Different terminals supprot different character encoding. We need to handle both 8-bit
         // extended ascii as well as an ESC-prefixed sequecne.
-        if len == 1 && (event.state & Mod1Mask) != 0 { // A key was pressed with the meta / alt key
+        if len == 1 && (event.state & Mod1Mask) != 0 {
+            // A key was pressed with the meta / alt key
             if self.term_window.window_mode == WindowMode::EIGHTBIT {
-                if buf[0] < 0o177 { // 127 in decimal, ie: 7 bit ascii that needs to be converted to 8 bit. This represents meta key usage.
-                let high_bit = 0x80;
-                c = buf[0] | high_bit; // Set the high bit
-                // Encode 'c' as UFT-8 and store in buffer
-                let char_value = char::from_u32(c as u8 as u32).expect("Invalid character encoding in kpress fn");
-                let utf8_len = char_value.encode_utf8(&mut buf.map(|b| b as u8)).len();
-                len = utf8_len as i32;
+                if buf[0] < 0o177 {
+                    // 127 in decimal, ie: 7 bit ascii that needs to be converted to 8 bit. This represents meta key usage.
+                    let high_bit = 0x80;
+                    c = buf[0] | high_bit; // Set the high bit
+                                           // Encode 'c' as UFT-8 and store in buffer
+                    let char_value = char::from_u32(c as u8 as u32)
+                        .expect("Invalid character encoding in kpress fn");
+                    let utf8_len = char_value.encode_utf8(&mut buf.map(|b| b as u8)).len();
+                    len = utf8_len as i32;
                 }
+            } else {
+                buf[1] = buf[0];
+                buf[0] = b'\x1B' as i8;
+                len = 2;
             }
         }
+        // TODO:
+        //ttywrite(buf, len, 1);
     }
 }
