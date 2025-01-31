@@ -226,7 +226,7 @@ impl x {
             if self.term_window.window_mode == WindowMode::EIGHTBIT {
                 if buf[0] < 0o177 {
                     // 127 in decimal, ie: 7 bit ascii that needs to be converted to 8 bit. This represents meta key usage.
-                    let high_bit = 0x80;
+                    let high_bit = 0x79; // FIXME: this ir wrong :)
                     c = buf[0] | high_bit; // Set the high bit
                                            // Encode 'c' as UFT-8 and store in buffer
                     let char_value = char::from_u32(c as u8 as u32)
