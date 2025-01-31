@@ -243,4 +243,42 @@ impl x {
         // TODO:
         //ttywrite(buf, len, 1);
     }
+
+    // ttywrite is a rabbit hole, I'll first need ttywriteraw, which needs translation of the C
+    // macros FD_ZERO and FD_SET
+
+    // ### macro `FD_ZERO`  
+    // provided by `<sys/select.h>`  
+    // ────────────────────────────────────────────────────────────────
+    // ```cpp
+    // #define FD_ZERO(fdsetp) __FD_ZERO(fdsetp)
+
+    // // Expands to
+    // do {
+      // unsigned int __i;
+      // fd_set *__arr = (&wfd);
+      // for (__i = 0; __i < sizeof(fd_set) / sizeof(__fd_mask); ++__i)
+        // ((__arr)->__fds_bits)[__i] = 0;
+    // } while (0)
+    // ```
+    
+    #[allow(dead_code)]
+    fn fd_zero(wfd: &mut fd_set) {
+        for i in 0..(size_of::<fd_set>() / size_of::<__fd_mask>()) {
+            wfd.__fds_bits[i] = 0;
+        }
+    } 
+     
+    // ### macro `FD_SET`  
+    // provided by `<sys/select.h>`  
+    // ─────────────────────────────────────────────────────────────────────────
+    // ```cpp
+    // #define FD_SET(fd, fdsetp) __FD_SET(fd, fdsetp)
+
+    // // Expands to
+    // ((void)(((&rfd)->__fds_bits)[((cmdfd) / (8 * (int)sizeof(__fd_mask)))] |=
+    //         ((__fd_mask)(1UL << ((cmdfd) % (8 * (int)sizeof(__fd_mask)))))))
+    // ```
+
+
 }
